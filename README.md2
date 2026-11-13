@@ -10,3 +10,7 @@
 3. Return: Answer should contain all required files and functionality
 
 4. Context: Put the files in Week 12 directory, make sure theres a main branch, and subsequent branches for each file
+
+
+Initial Prompt:
+Create a task organizer that allows you to create tasks, remove tasks, edit tasks with basic css and js.

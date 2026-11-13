@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f6fa">
+    <title>Task Organizer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="page-header">
+        <div>
+          <p class="eyebrow">YOUR DAY, IN FOCUS</p>
+          <h1>Task organizer</h1>
+          <p class="subtitle">Make a plan. Take it one task at a time.</p>
+        </div>
+        <div class="date-card" aria-label="Today's date">
+          <span class="date-card-label">TODAY</span>
+          <time id="today-date"></time>
+        </div>
+      </header>
+
+      <section class="summary" aria-label="Task summary">
+        <div class="summary-card">
+          <span class="summary-label">Total tasks</span>
+          <strong id="total-count">0</strong>
+        </div>
+        <div class="summary-card">
+          <span class="summary-label">To do</span>
+          <strong id="active-count">0</strong>
+        </div>
+        <div class="summary-card">
+          <span class="summary-label">Completed</span>
+          <strong id="completed-count">0</strong>
+        </div>
+      </section>
+
+      <section class="organizer-grid" aria-label="Task organizer">
+        <section class="panel form-panel" aria-labelledby="form-heading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">PLAN IT OUT</p>
+              <h2 id="form-heading">Add a task</h2>
+            </div>
+          </div>
+          <form id="task-form">
+            <label for="task-title">Task name</label>
+            <input id="task-title" name="title" type="text" maxlength="120" placeholder="What needs to get done?" required>
+
+            <label for="task-description">Details <span class="optional">(optional)</span></label>
+            <textarea id="task-description" name="description" rows="3" maxlength="500" placeholder="Add a few details"></textarea>
+
+            <div class="form-row">
+              <div>
+                <label for="task-due-date">Due date <span class="optional">(optional)</span></label>
+                <input id="task-due-date" name="dueDate" type="date">
+              </div>
+              <div>
+                <label for="task-priority">Priority</label>
+                <select id="task-priority" name="priority">
+                  <option value="low">Low</option>
+                  <option value="medium" selected>Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+            </div>
+
+            <p id="form-error" class="form-error" role="alert" hidden></p>
+            <div class="form-actions">
+              <button id="submit-task" class="button button-primary" type="submit">Add task</button>
+              <button id="cancel-edit" class="button button-secondary" type="button" hidden>Cancel</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel tasks-panel" aria-labelledby="tasks-heading">
+          <div class="section-heading tasks-heading">
+            <div>
+              <p class="eyebrow">YOUR LIST</p>
+              <h2 id="tasks-heading">Tasks</h2>
+            </div>
+            <button id="clear-completed" class="text-button" type="button" hidden>Clear completed</button>
+          </div>
+
+          <div class="task-tools">
+            <label class="search-label" for="task-search">Search tasks</label>
+            <input id="task-search" type="search" placeholder="Search your tasks">
+            <div class="filter-tabs" role="group" aria-label="Filter tasks">
+              <button class="filter-button is-selected" type="button" data-filter="all" aria-pressed="true">All</button>
+              <button class="filter-button" type="button" data-filter="active" aria-pressed="false">To do</button>
+              <button class="filter-button" type="button" data-filter="completed" aria-pressed="false">Completed</button>
+            </div>
+          </div>
+          <p id="storage-message" class="storage-message" role="status" hidden></p>
+          <ul id="task-list" class="task-list" aria-live="polite"></ul>
+          <p id="empty-state" class="empty-state">
+            <span class="empty-icon" aria-hidden="true">✦</span>
+            <strong id="empty-title">Nothing on your list yet</strong>
+            <span id="empty-description">Add your first task to get started.</span>
+          </p>
+        </section>
+      </section>
+      <footer class="page-footer">Your tasks are saved in this browser.</footer>
+    </main>
+  </body>
+</html>
