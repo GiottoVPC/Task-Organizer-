@@ -1,0 +1,16 @@
+{
+  "name": "task-organizer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node servers/index.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^9.1.0"
+  }
+}

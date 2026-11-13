@@ -1,6 +1,5 @@
 "use strict";
 
-const STORAGE_KEY = "task-organizer.tasks.v1";
 const priorities = new Set(["low", "medium", "high"]);
 
 const form = document.querySelector("#task-form");
@@ -42,29 +41,24 @@ function isTask(value) {
     && typeof value.createdAt === "string";
 }
 
-function loadTasks() {
-  const savedTasks = localStorage.getItem(STORAGE_KEY);
-  if (savedTasks === null) return [];
-
-  const parsedTasks = JSON.parse(savedTasks);
-  if (!Array.isArray(parsedTasks) || !parsedTasks.every(isTask)) {
-    throw new Error("Saved task data has an unexpected format.");
+async function apiRequest(path, options = {}) {
+  const response = await fetch(path, {
+    ...options,
+    headers: {
+      ...(options.body ? { "content-type": "application/json" } : {}),
+      ...options.headers
+    }
+  });
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.error || `Request failed (${response.status}).`);
   }
-  return parsedTasks;
+  return result;
 }
 
-function saveTasks() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-    storageMessage.hidden = true;
-    storageMessage.textContent = "";
-    return true;
-  } catch (error) {
-    storageMessage.textContent = "Your changes could not be saved in this browser. Check your browser storage settings and try again.";
-    storageMessage.hidden = false;
-    console.error("Unable to save task data:", error);
-    return false;
-  }
+function showStorageMessage(message) {
+  storageMessage.textContent = message;
+  storageMessage.hidden = !message;
 }
 
 function showFormError(message) {
@@ -186,7 +180,7 @@ function beginEdit(task) {
   form.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const title = titleInput.value.trim();
   if (!title) {
@@ -195,31 +189,38 @@ form.addEventListener("submit", (event) => {
     return;
   }
 
-  if (editingTaskId) {
-    const task = tasks.find((item) => item.id === editingTaskId);
-    if (!task) {
-      showFormError("This task is no longer available. Refresh the list and try again.");
-      return;
+  const taskFields = {
+    title,
+    description: descriptionInput.value.trim(),
+    dueDate: dueDateInput.value,
+    priority: priorityInput.value
+  };
+  const wasEditing = Boolean(editingTaskId);
+  const taskId = editingTaskId;
+  submitButton.disabled = true;
+  try {
+    const result = await apiRequest(
+      wasEditing ? `/api/tasks/${encodeURIComponent(taskId)}` : "/api/tasks",
+      {
+        method: wasEditing ? "PATCH" : "POST",
+        body: JSON.stringify(taskFields)
+      }
+    );
+    if (!isTask(result.task)) throw new Error("The API returned an invalid task.");
+    if (wasEditing) {
+      tasks = tasks.map((task) => task.id === taskId ? result.task : task);
+    } else {
+      tasks.unshift(result.task);
     }
-    task.title = title;
-    task.description = descriptionInput.value.trim();
-    task.dueDate = dueDateInput.value;
-    task.priority = priorityInput.value;
-  } else {
-    tasks.unshift({
-      id: crypto.randomUUID(),
-      title,
-      description: descriptionInput.value.trim(),
-      dueDate: dueDateInput.value,
-      priority: priorityInput.value,
-      completed: false,
-      createdAt: new Date().toISOString()
-    });
+    showStorageMessage("");
+    resetForm();
+    render();
+  } catch (error) {
+    showFormError(error.message);
+    console.error("Unable to save task:", error);
+  } finally {
+    submitButton.disabled = false;
   }
-
-  saveTasks();
-  resetForm();
-  render();
 });
 
 cancelButton.addEventListener("click", resetForm);
@@ -237,7 +238,7 @@ filterButtons.forEach((button) => {
   });
 });
 
-taskList.addEventListener("click", (event) => {
+taskList.addEventListener("click", async (event) => {
   const button = event.target.closest("button[data-action]");
   if (!button) return;
 
@@ -247,35 +248,73 @@ taskList.addEventListener("click", (event) => {
   if (button.dataset.action === "edit") {
     beginEdit(task);
   } else if (button.dataset.action === "delete") {
-    tasks = tasks.filter((item) => item.id !== task.id);
-    if (editingTaskId === task.id) resetForm();
-    saveTasks();
-    render();
+    button.disabled = true;
+    try {
+      await apiRequest(`/api/tasks/${encodeURIComponent(task.id)}`, { method: "DELETE" });
+      tasks = tasks.filter((item) => item.id !== task.id);
+      if (editingTaskId === task.id) resetForm();
+      showStorageMessage("");
+      render();
+    } catch (error) {
+      showStorageMessage(error.message);
+      console.error("Unable to delete task:", error);
+    } finally {
+      button.disabled = false;
+    }
   }
 });
 
-taskList.addEventListener("change", (event) => {
+taskList.addEventListener("change", async (event) => {
   const checkbox = event.target.closest('input[data-action="toggle"]');
   if (!checkbox) return;
 
   const task = tasks.find((item) => item.id === checkbox.dataset.id);
   if (!task) return;
-  task.completed = checkbox.checked;
-  saveTasks();
-  render();
+  checkbox.disabled = true;
+  try {
+    const result = await apiRequest(`/api/tasks/${encodeURIComponent(task.id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ completed: checkbox.checked })
+    });
+    if (!isTask(result.task)) throw new Error("The API returned an invalid task.");
+    tasks = tasks.map((item) => item.id === task.id ? result.task : item);
+    showStorageMessage("");
+    render();
+  } catch (error) {
+    checkbox.checked = task.completed;
+    checkbox.disabled = false;
+    showStorageMessage(error.message);
+    console.error("Unable to update task completion:", error);
+  }
 });
 
-clearCompletedButton.addEventListener("click", () => {
-  tasks = tasks.filter((task) => !task.completed);
-  saveTasks();
-  render();
+clearCompletedButton.addEventListener("click", async () => {
+  clearCompletedButton.disabled = true;
+  try {
+    await apiRequest("/api/tasks?completed=true", { method: "DELETE" });
+    tasks = tasks.filter((task) => !task.completed);
+    showStorageMessage("");
+    render();
+  } catch (error) {
+    showStorageMessage(error.message);
+    console.error("Unable to clear completed tasks:", error);
+  } finally {
+    clearCompletedButton.disabled = false;
+  }
 });
 
-try {
-  tasks = loadTasks();
-} catch (error) {
-  storageMessage.textContent = "Saved task data could not be read. New tasks can still be added, but saving them will replace the unread data.";
-  storageMessage.hidden = false;
-  console.error("Unable to read task data:", error);
+async function initialize() {
+  try {
+    const result = await apiRequest("/api/tasks");
+    if (!Array.isArray(result.tasks) || !result.tasks.every(isTask)) {
+      throw new Error("The API returned an invalid task list.");
+    }
+    tasks = result.tasks;
+  } catch (error) {
+    showStorageMessage(`Could not load tasks from the API: ${error.message}`);
+    console.error("Unable to load tasks:", error);
+  }
+  render();
 }
-render();
+
+initialize();
