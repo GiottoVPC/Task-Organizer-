@@ -9,3 +9,19 @@
 3. Return: Answer should contain all required files and functionality
 
 4. Context: Put the files in Week 12 directory, make sure theres a main branch, and subsequent branches for each file
+- app.is
+dist
+- ilyex.htmi
+lib
+netlity
+- netlify.toml
+node_modules
+- package-lock.json
+- package.json
+- README.md
+scripts
+- servers
+- styles.css
+test
+
+- follow this file and folder layout to make sure the backend of the organizer works 
