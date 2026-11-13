@@ -4,7 +4,7 @@
 - Keep task data in a database file that we can upload on Netlify
 - Use an API/Server layer for data updates
 
-2. Languages: HTML for main pages, a CSS file for styling, any JS file if needed, and make a json file for the database 
+2. Languages: HTML for main page, a CSS file for styling, any JS file if needed, and make a json file for the database 
 
 3. Return: Answer should contain all required files and functionality
 
